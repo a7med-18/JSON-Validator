@@ -41,7 +41,7 @@ public class JSONLexer {
             } else if (c == ',') {
                 tokens.add(new Token(Token.Type.COMMA, ","));
                 pos++;
-                expectColon = true;
+                expectColon = false;
             } else if (c == '"') {
                 tokens.add(new Token(Token.Type.STRING, extractString()));
                 expectColon = true;
@@ -75,32 +75,86 @@ public class JSONLexer {
             throw new Exception("Invalid JSON: A JSON payload should be an object or array, not a string.");
         }
     }
-
     private String extractString() throws Exception {
         int start = ++pos;
-        while (pos < input.length() && input.charAt(pos) != '"') {
-            if (input.charAt(pos) == '\\') {
-                throw new Exception("Illegal backslash escape at position " + pos);
+        StringBuilder sb = new StringBuilder();
+
+        while (pos < input.length()) {
+            char ch = input.charAt(pos);
+
+            if (ch == '"') {
+                // Closing quote found, return the extracted string
+                pos++;
+                return sb.toString();
             }
-            if (input.charAt(pos) == '\t') {
-                throw new Exception("Illegal tab character in string at position " + pos);
+
+            if (ch == '\\') {
+                // Handle escape sequences
+                if (pos + 1 >= input.length()) {
+                    throw new Exception("Unterminated escape sequence at position " + pos);
+                }
+
+                char nextChar = input.charAt(pos + 1);
+                if (nextChar == 'u') {
+                    // Handle Unicode escape sequence
+                    if (pos + 5 >= input.length()) {
+                        throw new Exception("Incomplete Unicode escape sequence at position " + pos);
+                    }
+                    String hex = input.substring(pos + 2, pos + 6);
+                    try {
+                        int codePoint = Integer.parseInt(hex, 16);
+                        sb.append((char) codePoint);
+                        pos += 6;
+                        continue;
+                    } catch (NumberFormatException e) {
+                        throw new Exception("Invalid Unicode escape sequence at position " + pos);
+                    }
+                }
+
+                switch (nextChar) {
+                    case '"': sb.append('"'); break;
+                    case '\\': sb.append('\\'); break;
+                    case 'b': sb.append('\b'); break;
+                    case 'f': sb.append('\f'); break;
+                    case 'n': sb.append('\n'); break;
+                    case 'r': sb.append('\r'); break;
+                    case 't': sb.append('\t'); break;
+                    case '/': sb.append('/'); break;
+                    default:
+                        throw new Exception("Illegal escape sequence at position " + pos);
+                }
+                pos += 2;
+                continue;
             }
-            if (input.charAt(pos) == '\n' || input.charAt(pos) == '\r') {
-                throw new Exception("Illegal line break in string at position " + pos);
+
+            if (ch == '\t' || ch == '\n' || ch == '\r') {
+                throw new Exception("Illegal character in string at position " + pos);
             }
+
+            sb.append(ch);
             pos++;
         }
-        if (pos >= input.length()) throw new Exception("Unterminated string starting at position " + start);
-        String str = input.substring(start, pos);
-        pos++;
-        return str;
+
+        throw new Exception("Unterminated string starting at position " + start);
     }
+
+
+
+
 
 
     private String extractNumber() throws Exception {
         int start = pos;
         boolean hasDecimal = false;
         boolean hasExponent = false;
+
+        // Allow leading '+' or '-'
+        if (input.charAt(pos) == '+' || input.charAt(pos) == '-') {
+            pos++;
+            if (pos >= input.length() || !Character.isDigit(input.charAt(pos))) {
+                throw new Exception("Invalid number format: Sign must be followed by digits at position " + pos);
+            }
+        }
 
         if (input.charAt(pos) == '0' && pos + 1 < input.length() && Character.isDigit(input.charAt(pos + 1))) {
             throw new Exception("Invalid number format: Numbers cannot have leading zeros at position " + pos);
@@ -151,4 +205,5 @@ public class JSONLexer {
 
         return input.substring(start, pos);
     }
+
 }

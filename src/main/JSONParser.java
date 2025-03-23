@@ -70,7 +70,6 @@ public class JSONParser {
     }
 
     // Method to parse a JSON array
-    // Method to parse a JSON array
     private void parseArray() throws Exception {
         index++; // Move past the opening bracket
         if (tokens.get(index).getType() == Token.Type.RIGHT_BRACKET) { // Handle empty array

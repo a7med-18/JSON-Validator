@@ -83,7 +83,7 @@ public class JSONLexer {
             char ch = input.charAt(pos);
 
             if (ch == '"') {
-                // Closing quote found, return the extracted string
+                // Closing quote found, break out
                 pos++;
                 return sb.toString();
             }
@@ -95,22 +95,6 @@ public class JSONLexer {
                 }
 
                 char nextChar = input.charAt(pos + 1);
-                if (nextChar == 'u') {
-                    // Handle Unicode escape sequence
-                    if (pos + 5 >= input.length()) {
-                        throw new Exception("Incomplete Unicode escape sequence at position " + pos);
-                    }
-                    String hex = input.substring(pos + 2, pos + 6);
-                    try {
-                        int codePoint = Integer.parseInt(hex, 16);
-                        sb.append((char) codePoint);
-                        pos += 6;
-                        continue;
-                    } catch (NumberFormatException e) {
-                        throw new Exception("Invalid Unicode escape sequence at position " + pos);
-                    }
-                }
-
                 switch (nextChar) {
                     case '"': sb.append('"'); break;
                     case '\\': sb.append('\\'); break;
@@ -119,7 +103,7 @@ public class JSONLexer {
                     case 'n': sb.append('\n'); break;
                     case 'r': sb.append('\r'); break;
                     case 't': sb.append('\t'); break;
-                    case '/': sb.append('/'); break;
+                    case '/': sb.append('/'); break;  // Handles "\/" escape sequence
                     default:
                         throw new Exception("Illegal escape sequence at position " + pos);
                 }
@@ -137,7 +121,6 @@ public class JSONLexer {
 
         throw new Exception("Unterminated string starting at position " + start);
     }
-
 
 
 

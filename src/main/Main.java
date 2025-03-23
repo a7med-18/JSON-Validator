@@ -12,7 +12,7 @@ public class Main {
         if (args.length > 0) {
             baseDir = args[0]; // Use the provided command-line argument
         } else {
-            baseDir = System.getProperty("user.dir") + "/src/step5/"; // Use the default path
+            baseDir = System.getProperty("user.dir") + "/src/test/"; // Use the default path
         }
         System.out.println("Base Directory: " + baseDir);
 
